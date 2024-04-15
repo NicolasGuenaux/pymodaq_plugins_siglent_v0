@@ -1,14 +1,14 @@
 ## To modify by developer(s) of the plugin
 
 [plugin-info]
-SHORT_PLUGIN_NAME = 'template'  #to be modified, for instance daqmx then rename the module name:
+SHORT_PLUGIN_NAME = 'siglent'  #to be modified, for instance daqmx then rename the module name:
 # (pymodaq_plugins_template become pymodaq_plugins_daqmx for instance)
 
-package-url = 'https://github.com/PyMoDAQ/pymodaq_plugins_template' #to modify
-description = 'some word about your plugin'
+package-url = 'https://github.com/NicolasGuenaux/pymodaq_plugins_siglent/' #to modify
+description = 'the plugin should enable to control an arbitrary waveform generator from the company SIGLENT'
 
-author = 'Author Name'
-author-email = 'Author email'
+author = 'Nicolas Guénaux'
+author-email = 'nicolas.guenaux@cea.fr'
 license = 'MIT'
 
 [plugin-install]
