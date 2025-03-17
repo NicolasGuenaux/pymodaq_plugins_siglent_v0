@@ -2,11 +2,17 @@ from pymodaq.control_modules.move_utility_classes import DAQ_Move_base, comon_pa
     DataActuator  # common set of parameters for all actuators
 from pymodaq.utils.daq_utils import ThreadCommand # object used to send info back to the main thread
 from pymodaq.utils.parameter import Parameter
-from siglent_wrapper import ActuatorWrapper
+# from siglent_wrapper import ActuatorWrapper
+from pymodaq_plugins_siglent.hardware.siglent_wrapper import ActuatorWrapper
 
 #     #  TODO Replace this fake class with the import of the real python wrapper of your instrument
 #     pass
 ## No python wrapper for Siglent SDG products (no dll files, only SCPI commands).
+
+# import sys, os
+# # from siglent_wrapper import ActuatorWrapper
+# # sys.path.append('c:\\Users\\attose1_VMI\\local_repository\\pymodaq_plugins_siglent\\src\\pymodaq_plugins_siglent\\daq_move_plugins')
+# sys.path.append('C:\\Users\\NG278231\\Documents\\GitHub\\pymodaq_plugins_siglent_v0\\src\\pymodaq_plugins_siglent\\daq_move_plugins')
 
 # TODO:
 # (1) change the name of the following class to DAQ_Move_TheNameOfYourChoice
@@ -37,19 +43,23 @@ class DAQ_Move_Siglent(DAQ_Move_base):
     # TODO add your particular attributes here if any
 
     """
-    _controller_units = ActuatorWrapper.units  # TODO for your plugin: put the correct unit here
+    _controller_units = ""
+    # _controller_units = ActuatorWrapper.units  # TODO for your plugin: put the correct unit here
     is_multiaxes = True  # TODO for your plugin set to True if this plugin is controlled for a multiaxis controller
-    _axis_names = ['Amplitude', 'Phase']  # TODO for your plugin: complete the list
+    _axis_names = ['Amplitude', 'Phase', 'Frequency', 'Delay']  # TODO for your plugin: complete the list
     _epsilon = 0.1  # TODO replace this by a value that is correct depending on your controller
     data_actuator_type = DataActuatorType['DataActuator']  # wether you use the new data style for actuator otherwise set this
     # as  DataActuatorType['float']  (or entirely remove the line)
 
-    params = [  
-        {'title': 'Frequency:', 'name': 'frequency', 'type': 'float', 'value': 10000000},
+    params = [
+        {'title': 'Burst:', 'name': 'burst', 'type': 'text', 'value': "ON"},
+        {'title': 'Frequency:', 'name': 'frequency', 'type': 'float', 'value': 1e7},
         {'title': 'Offset:', 'name': 'offset', 'type': 'float', 'value': 0},
-        {'title': 'Delay:', 'name': 'delay', 'type': 'float', 'value': 0.000005},
+        {'title': 'Delay:', 'name': 'delay', 'type': 'float', 'value': 5e-6},
         {'title': 'Rep number:', 'name': 'cycles', 'type': 'int', 'value': 1},
-        {'title': 'Wavetype:', 'name': 'wavetype', 'type': 'text', 'value': "SINE"},
+        # {'title': 'Wavetype:', 'name': 'wavetype', 'type': 'text', 'value': "SINE"},
+        {'title': 'Wavetype:', 'name': 'wavetype', 'type': 'itemselect',
+         'value': dict(all_items=["ARB", "SINE", "RAMP", "SQUARE", "DC"], selected=["SINE"])},
         {'title': 'File:', 'name': 'file', 'type': 'text', 'value': ""},
          # TODO for your custom plugin: elements to be added here as dicts in order to control your custom stage
                 ] + comon_parameters_fun(is_multiaxes, axis_names=_axis_names, epsilon=_epsilon)
@@ -101,8 +111,23 @@ class DAQ_Move_Siglent(DAQ_Move_base):
             A given parameter (within detector_settings) whose value has been changed by the user
         """
         ## TODO for your custom plugin
-        if param.name() == "axis":
+        if param.name() == 'axis':
+            print("self.axis_name =", self.axis_name)
+            print("param.value() =", param.value())
             self.controller.set_axis(self.axis_name)
+            pos = self.get_actuator_value()
+            if self.axis_name == "Delay":
+                self.controller.set_burst(mode="ON")
+                self.controller.set_delay(time = 3e-6)
+            self.controller.set_unit()
+            # self.axis_unit = self.controller.get_unit()
+            # print("self.axis_unit =", self.axis_unit)
+            # # do this only if you can and if the units are not known beforehand, for instance
+            # # if the motors connected to the controller are of different type (mm, µm, nm, , etc...)
+            # # see BrushlessDCMotor from the thorlabs plugin for an exemple
+
+        elif param.name() == "burst":
+            self.controller.set_burst(mode=param.value())
         elif param.name() == "frequency":
             self.controller.set_frequency(param.value())
         elif param.name() == "offset":
@@ -112,11 +137,31 @@ class DAQ_Move_Siglent(DAQ_Move_base):
         elif param.name() == "cycles":
             self.controller.set_cycles(param.value())
         elif param.name() == "wavetype":
-            self.controller.set_wavetype(param.value())
+            wavetype = param.value().get('selected')[0]
+            self.controller.set_wavetype(wavetype)
+
+            burst_state = self.controller.get_burst_state()
+            self.settings.child('burst').setValue(burst_state)
+
+            dc = (wavetype == "DC")
+            offset = self.controller.get_offset(DC=dc)
+            self.settings.child('offset').setValue(offset)
         elif param.name() == "file":
             self.controller.set_arbwave(param.value())
+            self.settings.child('wavetype').setValue(
+                dict(all_items=["ARB", "SINE", "RAMP", "SQUARE", "DC"], selected=["ARB"]))
+
+            freq = self.controller.get_frequency()
+            self.settings.child('frequency').setValue(freq)
+
+            offset = self.controller.get_offset()
+            self.settings.child('offset').setValue(offset)
+
+            burst_state = self.controller.get_burst_state()
+            self.settings.child('burst').setValue(burst_state)
         else:
             pass
+
 
     def ini_stage(self, controller=None):
         """Actuator communication initialization
@@ -139,7 +184,7 @@ class DAQ_Move_Siglent(DAQ_Move_base):
         self.controller.open_communication()
 
         self.controller.__init__()  # todo
-        info = "Typical CH1 settings turned on"
+        info = "siglent connected"
         initialized = self.controller.open_communication()
 
         return info, initialized
@@ -167,13 +212,18 @@ class DAQ_Move_Siglent(DAQ_Move_base):
         ----------
         value: (float) value of the relative target positioning
         """
+        pos = self.controller.get_pos()
+        self.current_position = pos
+
         value = self.check_bound(self.current_position + value) - self.current_position
         self.target_value = value + self.current_position
         value = self.set_position_relative_with_scaling(value)
 
         ## TODO for your custom plugin
         # raise NotImplemented  # when writing your own plugin remove this line
-        self.controller.set_rel_pos(value.value())  # when writing your own plugin replace this line
+        # self.controller.set_rel_pos(value.value())  # when writing your own plugin replace this line
+
+        self.controller.set_pos(pos + value.value())
         self.emit_status(ThreadCommand('Update_Status', ['position updated']))
 
     def move_home(self):
