@@ -205,7 +205,16 @@ class DAQ_Move_Siglent(DAQ_Move_base):
         value = self.set_position_with_scaling(value)  # apply scaling if the user specified one
         ## TODO for your custom plugin
         # raise NotImplemented  # when writing your own plugin remove this line
+
+        if self.controller.dual:
+            phase2 = self.controller.get_phase2()
+            phase = self.controller.get_phase()
+            delta = value.value() - phase
+            self.controller.set_phase2(delta+phase2)
+
         self.controller.set_pos(value.value())  # when writing your own plugin replace this line
+
+
 
         self.emit_status(ThreadCommand('Update_Status', ['position updated']))
 
@@ -231,8 +240,8 @@ class DAQ_Move_Siglent(DAQ_Move_base):
 
         if self.controller.dual:
             if self.controller.axis == "Phase":
-                phase = self.controller.get_phase2()
-                self.controller.set_phase2(phase + value.value())
+                phase2 = self.controller.get_phase2()
+                self.controller.set_phase2(phase2 + value.value())
 
         self.emit_status(ThreadCommand('Update_Status', ['position updated']))
 
