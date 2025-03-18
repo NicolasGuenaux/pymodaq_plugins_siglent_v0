@@ -98,7 +98,10 @@ class ActuatorWrapper:
         answer = siglent.query(self.channel + ":BSWV?")
         print("answer = ", answer)
         amplitude = answer.split(',')[7]  # The 7th word corresponds to the amp
-        amplitude = float(amplitude[:-1])  # We skip the 'V' at the end
+        if self.wavetype == "DC":
+            amplitude = float(amplitude[:-2])
+        else:
+            amplitude = float(amplitude[:-1])  # We skip the 'V' at the end
         print("amplitude =", amplitude)
         self.amplitude = amplitude
         return (self.amplitude)
@@ -131,7 +134,10 @@ class ActuatorWrapper:
 
     def set_amplitude(self, amp):
         """Sets the amplitude to amp, in V"""
-        siglent.write(self.channel + ":BSWV AMP," + str(amp))
+        if self.wavetype == "DC":
+            siglent.write(self.channel + ":BSWV OFST," + str(amp))
+        else:
+            siglent.write(self.channel + ":BSWV AMP," + str(amp))
         self.amplitude = amp
 
     def set_rel_amplitude(self, rel_amp):
