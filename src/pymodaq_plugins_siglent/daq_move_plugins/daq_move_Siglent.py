@@ -57,6 +57,7 @@ class DAQ_Move_Siglent(DAQ_Move_base):
         {'title': 'Offset:', 'name': 'offset', 'type': 'float', 'value': 0},
         {'title': 'Delay:', 'name': 'delay', 'type': 'float', 'value': 5e-6},
         {'title': 'Rep number:', 'name': 'cycles', 'type': 'int', 'value': 1},
+        {'title': 'Dual:', 'name': 'dual', 'type': 'bool', 'value': False},
         # {'title': 'Wavetype:', 'name': 'wavetype', 'type': 'text', 'value': "SINE"},
         {'title': 'Wavetype:', 'name': 'wavetype', 'type': 'itemselect',
          'value': dict(all_items=["ARB", "SINE", "RAMP", "SQUARE", "DC"], selected=["SINE"])},
@@ -130,6 +131,8 @@ class DAQ_Move_Siglent(DAQ_Move_base):
             self.controller.set_burst(mode=param.value())
         elif param.name() == "frequency":
             self.controller.set_frequency(param.value())
+        elif param.name() == "dual":
+            self.controller.set_dual(param.value())
         elif param.name() == "offset":
             self.controller.set_offset(param.value())
         elif param.name() == "delay":

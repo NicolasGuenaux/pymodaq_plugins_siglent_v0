@@ -86,6 +86,7 @@ class ActuatorWrapper:
         self.channel = "C1"
         self.state = "OFF"
         self.unit = 'V'
+        self.dual = False
 
         # self.set_rel_amplitude(1)
         # self.set_rel_amplitude(-1)
@@ -149,9 +150,17 @@ class ActuatorWrapper:
         self.amplitude = new_amp
         return
 
+    def set_dual(self, bool):
+        self.dual = bool
+
+    def get_dual(self):
+        return self.dual
+
     def set_phase(self, phi):
         """Sets the phase to phi, in degrees"""
         siglent.write(self.channel + ":BSWV PHSE," + str(phi))
+        if self.dual : #for sinusoidal scans to be performed while cancelling the parasite signal on mbes entry
+            siglent.write("C2:BSWV PHSE," + str(phi))
         self.phase = phi
         return
 
@@ -273,6 +282,8 @@ class ActuatorWrapper:
     def set_delay(self, time):
         """Sets the delay, in s, only available in BTWV ext trigger mode"""
         siglent.write(self.channel + ":BTWV DLAY," + str(time))
+        if self.dual : #for sinusoidal scans to be performed while cancelling the parasite signal on mbes entry
+            siglent.write("C2:BTWV DLAY," + str(time))
         self.delay = time
 
     def set_rel_delay(self, time):
