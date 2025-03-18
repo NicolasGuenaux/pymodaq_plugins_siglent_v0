@@ -206,6 +206,7 @@ class DAQ_Move_Siglent(DAQ_Move_base):
         ## TODO for your custom plugin
         # raise NotImplemented  # when writing your own plugin remove this line
         self.controller.set_pos(value.value())  # when writing your own plugin replace this line
+
         self.emit_status(ThreadCommand('Update_Status', ['position updated']))
 
     def move_rel(self, value: DataActuator):
@@ -227,6 +228,12 @@ class DAQ_Move_Siglent(DAQ_Move_base):
         # self.controller.set_rel_pos(value.value())  # when writing your own plugin replace this line
 
         self.controller.set_pos(pos + value.value())
+
+        if self.controller.dual:
+            if self.controller.axis == "Phase":
+                phase = self.controller.get_phase2()
+                self.controller.set_phase2(phase + value.value())
+
         self.emit_status(ThreadCommand('Update_Status', ['position updated']))
 
     def move_home(self):

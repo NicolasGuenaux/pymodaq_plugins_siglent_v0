@@ -77,6 +77,7 @@ class ActuatorWrapper:
         self.amplitude = 3
         self.offset = 0
         self.phase = 0
+        self.phase2 = 0
         self.frequency = 10000000
         self.delay = 0.000005
         self.cycles = 1
@@ -122,6 +123,21 @@ class ActuatorWrapper:
         print("phase =", self.phase)
         return (self.phase)
 
+    def get_phase2(self):
+        print("in get_phase")
+        answer = siglent.query("C2" + ":BSWV?")
+        print("answer = ", answer)
+        wtype = self.get_wavetype()
+        if (wtype == "RAMP") or (wtype == "SQUARE"):
+            phase = answer.split(',')[-3]  # The 3rd to last word corresponds to the phase
+            phase = float(phase)
+        else:
+            phase = answer.split(',')[-1]  # The last word corresponds to the phase
+            phase = float(phase[:-1])  # We get rid of the '\n' at the end
+        self.phase2 = phase
+        print("phase =", self.phase2)
+        return (self.phase2)
+
     def set_burst(self, mode):
         """Sets the burst parameter "ON" or "OFF" """
         siglent.write(self.channel + ":BTWV STATE," + mode)
@@ -159,9 +175,13 @@ class ActuatorWrapper:
     def set_phase(self, phi):
         """Sets the phase to phi, in degrees"""
         siglent.write(self.channel + ":BSWV PHSE," + str(phi))
-        if self.dual : #for sinusoidal scans to be performed while cancelling the parasite signal on mbes entry
-            siglent.write("C2:BSWV PHSE," + str(phi))
         self.phase = phi
+        return
+
+    def set_phase2(self, phi):
+        """Sets the phase to phi, in degrees"""
+        siglent.write("C2:BSWV PHSE," + str(phi))
+        self.phase2 = phi
         return
 
     def set_rel_phase(self, rel_phi):
@@ -208,7 +228,9 @@ class ActuatorWrapper:
         if self.axis == "Amplitude":
             return (self.set_amplitude(pos))
         elif self.axis == "Phase":
-            return (self.set_phase(pos))
+            return self.set_phase(pos)
+            # if self.dual:
+            #     self.set_phase2(pos)
         elif self.axis == "Frequency":
             return (self.set_frequency(pos))
         elif self.axis == "Delay":
